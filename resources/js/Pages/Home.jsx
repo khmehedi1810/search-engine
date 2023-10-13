@@ -13,6 +13,8 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
     const [tempData, setTempData] = useState([]);
     const [customStartDate, setCustomStartDate] = useState('');
     const [customEndDate, setCustomEndDate] = useState('');
+    const [isAscending, setIsAscending] = useState(true);
+    const [keys, setKeys] = useState([]);
 
     const handleSearch = () => {
         axios.post('/api/search-data', { ...data })
@@ -72,9 +74,37 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
         setCopyData(filteredData);
     };
 
+    const sortData = () => {
+        const sortedData = [...copyData].sort((a, b) => {
+            // Assuming you want to sort by the 'name' field
+            return isAscending
+                ? a.name.localeCompare(b.name)
+                : b.name.localeCompare(a.name);
+        });
+
+        setCopyData(sortedData);
+    };
+
+    const toggleSortOrder = () => {
+        setIsAscending(!isAscending);
+        sortData();
+    };
+
+    const Keysort = (data) => {
+        setKeys(pre => {
+            return [...pre, data]
+        })
+        const filteredData = copyData.filter(item => {
+            const name = item.name.toLowerCase(); // Convert to lowercase for case-insensitive search
+            return keys.some(key => name.includes(key.toLowerCase()));
+        });
+
+        setCopyData(filteredData);
+    };
+
     useEffect(() => {
-        console.log(copyData)
-    }, [copyData])
+        console.log(keys)
+    }, [keys])
 
     return (
         <>
@@ -117,6 +147,14 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
 
                                             <div class="flex items-center mb-4">
                                                 <div class='mr-2'>
+                                                    <button
+                                                        class="bg-gray-100 text-gray-800 text-sm font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300"
+                                                        onClick={toggleSortOrder}
+                                                    >
+                                                        Toggle Sort Order
+                                                    </button>
+                                                </div>
+                                                <div class='mr-2'>
                                                     <label for="chkYesterday" class="flex items-center">
                                                         <input
                                                             id="chkYesterday"
@@ -155,6 +193,9 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                                                 keywordCount && keywordCount.map((item, i) => (
                                                     <button key={i}
                                                         class="bg-gray-100 text-gray-800 text-sm font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300"
+                                                        onClick={() => {
+                                                            Keysort(item.key)
+                                                        }}
                                                     >
                                                         {item.key} <span class='bg-white text-black ml-2 px-1 rounded-full'>{item.value}</span>
                                                     </button>

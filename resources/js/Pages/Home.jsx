@@ -7,70 +7,72 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
         search: ''
     });
     const [searctResult, setSearchResult] = useState([])
+    const [originalData, setOriginalData] = useState([]);
     const [keywordCount, setKeywordCount] = useState([])
-
     const [copyData, setCopyData] = useState([]);
-    const [tempData, setTempData] = useState([]);
-    const [customStartDate, setCustomStartDate] = useState('');
-    const [customEndDate, setCustomEndDate] = useState('');
+    const [startDate, setStartDate] = useState(null);
+    const [endDate, setEndDate] = useState(null);
+
     const [isAscending, setIsAscending] = useState(true);
     const [keys, setKeys] = useState([]);
+    const [selectedKeywords, setSelectedKeywords] = useState([]);
+
 
     const handleSearch = () => {
         axios.post('/api/search-data', { ...data })
             .then((res) => {
-                setSearchResult(res?.data?.data?.results)
-                setCopyData(res?.data?.data?.results)
-                console.log(res?.data?.data?.results)
+                const results = res?.data?.data?.results;
+                setOriginalData(results);
+                setSearchResult(results);
+                setCopyData(results);
+                console.log(results);
                 let myObject = res?.data?.count;
-                let countAbleKey = Object.entries(myObject).map(i => ({ key: i[0], value: i[1] }))
-                setKeywordCount(countAbleKey)
+                let countAbleKey = Object.entries(myObject).map(i => ({ key: i[0], value: i[1] }));
+                setKeywordCount(countAbleKey);
             })
             .catch((err) => {
-                setSearchResult([])
-            })
+                setSearchResult([]);
+            });
     }
 
     const handleYesterday = (e) => {
-        if (e == true) {
+        if (e) {
             const today = new Date();
             const yesterday = new Date(today);
             yesterday.setDate(yesterday.getDate() - 1);
             filterData(yesterday, today);
         } else {
-            setCopyData(tempData)
+            setCopyData(originalData);
         }
     };
 
     const handleLast7Days = (e) => {
-        if (e == true) {
+        if (e) {
             const today = new Date();
             const yesterday = new Date(today);
             yesterday.setDate(yesterday.getDate() - 7);
             filterData(yesterday, today);
         } else {
-            setCopyData(tempData)
+            setCopyData(originalData);
         }
     };
 
     const handleLast30Days = (e) => {
-        if (e == true) {
+        if (e) {
             const today = new Date();
             const yesterday = new Date(today);
             yesterday.setDate(yesterday.getDate() - 30);
             filterData(yesterday, today);
         } else {
-            setCopyData(tempData)
+            setCopyData(originalData);
         }
     };
 
     const filterData = (startDate, endDate) => {
-        const filteredData = copyData.filter(item => {
+        const filteredData = originalData.filter(item => {
             const itemDate = new Date(item.created_at);
-
             return itemDate >= startDate && itemDate <= endDate;
         });
-        setTempData(copyData)
         setCopyData(filteredData);
     };
 
@@ -90,21 +92,38 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
         sortData();
     };
 
-    const Keysort = (data) => {
-        setKeys(pre => {
-            return [...pre, data]
-        })
-        const filteredData = copyData.filter(item => {
-            const name = item.name.toLowerCase(); // Convert to lowercase for case-insensitive search
-            return keys.some(key => name.includes(key.toLowerCase()));
-        });
+    // const Keysort = (data) => {
+    //     setKeys(pre => {
+    //         return [...pre, data]
+    //     })
+    //     const filteredData = copyData.filter(item => {
+    //         const name = item.name.toLowerCase(); // Convert to lowercase for case-insensitive search
+    //         return keys.some(key => name.includes(key.toLowerCase()));
+    //     });
 
-        setCopyData(filteredData);
-    };
+    //     setCopyData(filteredData);
+    // };
+
+    const formatDate = (dateString) => {
+        const options = {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric',
+            second: 'numeric',
+            timeZoneName: 'short'
+        };
+        const date = new Date(dateString);
+        return date.toLocaleString(undefined, options);
+    }
 
     useEffect(() => {
-        console.log(keys)
-    }, [keys])
+        if (startDate !== null && endDate !== null) {
+            filterData(new Date(startDate), new Date(endDate));
+        }
+    }, [startDate, endDate])
 
     return (
         <>
@@ -187,15 +206,28 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                                                 </div>
                                             </div>
                                         </div>
+                                        <div class="flex space-x-4 mt-4  items-center">
+                                            <label class="text-sm">Start Date:</label>
+                                            <input
+                                                type="date"
+                                                value={startDate}
+                                                onChange={(e) => setStartDate(e.target.value)}
+                                            />
+                                            <label class="text-sm">End Date:</label>
+                                            <input
+                                                type="date"
+                                                value={endDate}
+                                                onChange={(e) => setEndDate(e.target.value)}
+                                            />
+                                        </div>
+                                        <br />
                                         <div>
                                             <span class='text-lg font-semibold'>Keywords: </span>
                                             {
                                                 keywordCount && keywordCount.map((item, i) => (
                                                     <button key={i}
                                                         class="bg-gray-100 text-gray-800 text-sm font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300"
-                                                        onClick={() => {
-                                                            Keysort(item.key)
-                                                        }}
+
                                                     >
                                                         {item.key} <span class='bg-white text-black ml-2 px-1 rounded-full'>{item.value}</span>
                                                     </button>
